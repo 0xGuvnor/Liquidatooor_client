@@ -1,0 +1,104 @@
+[
+  {
+    "type": "constructor",
+    "payable": false,
+    "inputs": [{ "type": "address", "name": "_addressesProvider" }]
+  },
+  {
+    "type": "event",
+    "anonymous": false,
+    "name": "OwnershipTransferred",
+    "inputs": [
+      { "type": "address", "name": "previousOwner", "indexed": true },
+      { "type": "address", "name": "newOwner", "indexed": true }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "ADDRESSES_PROVIDER",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+    "inputs": [],
+    "outputs": [{ "type": "address" }]
+  },
+  {
+    "type": "function",
+    "name": "POOL",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+    "inputs": [],
+    "outputs": [{ "type": "address" }]
+  },
+  {
+    "type": "function",
+    "name": "executeOperation",
+    "constant": false,
+    "payable": false,
+    "inputs": [
+      { "type": "address", "name": "asset" },
+      { "type": "uint256", "name": "amount" },
+      { "type": "uint256", "name": "premium" },
+      { "type": "address", "name": "initiator" },
+      { "type": "bytes", "name": "params" }
+    ],
+    "outputs": [{ "type": "bool" }]
+  },
+  {
+    "type": "function",
+    "name": "getBalance",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+    "inputs": [{ "type": "address", "name": "_token" }],
+    "outputs": [{ "type": "uint256" }]
+  },
+  {
+    "type": "function",
+    "name": "owner",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+    "inputs": [],
+    "outputs": [{ "type": "address" }]
+  },
+  {
+    "type": "function",
+    "name": "renounceOwnership",
+    "constant": false,
+    "payable": false,
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "requestFlashLoan",
+    "constant": false,
+    "payable": false,
+    "inputs": [
+      { "type": "address", "name": "_token" },
+      { "type": "uint256", "name": "_amount" },
+      { "type": "address", "name": "_collateral" },
+      { "type": "address", "name": "_liquidatee" },
+      { "type": "bool", "name": "_receiveAToken" }
+    ],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "transferOwnership",
+    "constant": false,
+    "payable": false,
+    "inputs": [{ "type": "address", "name": "newOwner" }],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "withdraw",
+    "constant": false,
+    "payable": false,
+    "inputs": [{ "type": "address", "name": "_token" }],
+    "outputs": []
+  }
+]
