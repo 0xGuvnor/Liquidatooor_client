@@ -23,8 +23,8 @@ const AccountDetails = () => {
   } = useUserContext();
 
   // Get health factor
-  // Uses Avax mainnet chain id as default
   const { data: userAccountData, isError } = useContractRead({
+    // Uses Avax mainnet chain id as default
     address: contractAddresses[chainId || 43114].Pool,
     abi: poolAbi,
     functionName: "getUserAccountData",
@@ -32,8 +32,9 @@ const AccountDetails = () => {
   });
 
   // Get supplied & borrowed assets
-  // Uses Avax mainnet chain id as default
+
   const { data: userReserveData } = useContractRead({
+    // Uses Avax mainnet chain id as default
     address: contractAddresses[chainId || 43114].UiPoolProvider,
     abi: uiPoolDataProviderAbi,
     functionName: "getUserReservesData",

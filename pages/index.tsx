@@ -9,13 +9,13 @@ const Home: NextPage = () => {
   return (
     <div>
       <Head>
-        <title>Liquidatooor - Liquidation Tool for Aave</title>
+        <title>LiquidatooOr - Liquidation Tool for Aave</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
       <Header />
 
-      <main className="w-full px-4 mx-auto lg:max-w-7xl xl:px-0">
+      <main className="w-full px-4 mx-auto lg:max-w-7xl xl:px-8">
         <AccountDetails />
         <LiquidationCard />
       </main>

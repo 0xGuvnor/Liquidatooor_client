@@ -3,7 +3,6 @@ import { useUserContext } from "../context/userContext";
 import { ImCheckmark } from "react-icons/im";
 import { useEffect, useState } from "react";
 import {
-  erc20ABI,
   useContractRead,
   useContractWrite,
   usePrepareContractWrite,
@@ -14,9 +13,12 @@ import { Rings } from "react-loading-icons";
 import { poolAbi } from "../constants/aave/v3/poolAbi";
 import { ethers } from "ethers";
 import useIsMounted from "../hooks/useIsMounted";
+import { oracleABI } from "../constants/aave/v3/oracleABI";
+import { protocolDataProvider } from "../constants/aave/v3/protocolDataProvider";
 
 interface NetworkMapping {
   "43113": { LiquidatooorV3: string[] };
+  "80001": { LiquidatooorV3: string[] };
 }
 
 const LiquidationCard = () => {
@@ -38,15 +40,20 @@ const LiquidationCard = () => {
   const [liquidatooorAddress, setLiquidatooorAddress] = useState<
     `0x${string}` | undefined
   >(undefined);
+  const [liquidationBonus, setLiquidationBonus] = useState(0);
 
-  const { config } = usePrepareContractWrite({
+  const { config: requestFlashLoanConfig } = usePrepareContractWrite({
     address: liquidatooorAddress,
     abi: LiquidatooorABI,
     functionName: "requestFlashLoan",
-    args: [liquidateAsset, , collateralAsset, account, false],
+    args: [liquidateAsset, , maxLiquidationAmount, collateralAsset, account],
   });
 
-  const { data, isLoading, isSuccess, write } = useContractWrite(config);
+  const {
+    isLoading,
+    isSuccess,
+    write: requestFlashLoan,
+  } = useContractWrite(requestFlashLoanConfig);
 
   const { data: flashLoanFee } = useContractRead({
     address: contractAddresses[chainId || 43114].Pool,
@@ -54,27 +61,33 @@ const LiquidationCard = () => {
     functionName: "FLASHLOAN_PREMIUM_TOTAL",
   });
 
-  const { data: tokenFeeBalance } = useContractRead({
-    address: liquidateAsset,
-    abi: erc20ABI,
-    functionName: "balanceOf",
-    args: [liquidatooorAddress as `0x${string}`],
+  const { data: prices } = useContractRead({
+    address: contractAddresses[chainId || 43114].Oracle,
+    abi: oracleABI,
+    functionName: "getAssetsPrices",
+    args: [[collateralAsset!, liquidateAsset!]],
   });
 
-  const { config: withdrawConfig } = usePrepareContractWrite({
-    address: liquidatooorAddress,
-    abi: LiquidatooorABI,
-    functionName: "withdraw",
-    args: [liquidateAsset],
+  const { data: configData } = useContractRead({
+    address: contractAddresses[chainId || 43114].ProtocolDataProvider,
+    abi: protocolDataProvider,
+    functionName: "getReserveConfigurationData",
+    args: [collateralAsset!],
   });
 
-  const { write: writeWithdraw } = useContractWrite(withdrawConfig);
+  useEffect(() => {
+    setLiquidationBonus(Number(configData?.liquidationBonus) / 10000);
+  }, [configData]);
 
   useEffect(() => {
     if (chainId && chainId in networkMapping) {
+      const len =
+        networkMapping[chainId.toString() as keyof NetworkMapping]
+          .LiquidatooorV3.length;
+
       setLiquidatooorAddress(
         networkMapping[chainId.toString() as keyof NetworkMapping]
-          .LiquidatooorV3[0] as `0x${string}`
+          .LiquidatooorV3[len - 1] as `0x${string}`
       );
     }
   }, [chainId]);
@@ -150,14 +163,20 @@ const LiquidationCard = () => {
 
           <button
             disabled={!liquidatable}
-            onClick={() => write?.()}
+            onClick={() => requestFlashLoan?.()}
             className={`${
-              liquidatable ? "" : "cursor-not-allowed"
+              !liquidatable && "cursor-not-allowed"
             } relative inline-block px-4 py-2 w-[273px] font-medium group h-12`}
           >
             <span className="absolute inset-0 w-full h-full transition duration-300 ease-in-out transform translate-x-2 translate-y-2 bg-black group-hover:-translate-x-0 group-hover:-translate-y-0"></span>
-            <span className="absolute inset-0 w-full h-full bg-primary group-hover:bg-primary-focus"></span>
-            <span className="relative font-bold text-primary-content group-hover:text-primary-content">
+            <span
+              className={`${
+                liquidatable
+                  ? "bg-primary group-hover:bg-primary-focus"
+                  : "bg-gray-500 group-hover:bg-gray-600"
+              } absolute inset-0 w-full h-full `}
+            ></span>
+            <span className="relative font-bold text-primary-content">
               {isLoading ? (
                 <div className="flex justify-center">
                   <Rings className="-mt-2" />
@@ -180,59 +199,53 @@ const LiquidationCard = () => {
         </h4>
 
         <div className="flex justify-between space-x-8">
-          <p className="font-extralight">Max liquidatable amt:</p>{" "}
-          <p>
-            {liquidateAsset && maxLiquidationAmount[liquidateAsset]}{" "}
-            {chainId &&
-              liquidateAsset &&
-              contractAddresses[chainId][liquidateAsset]}
-          </p>
-        </div>
-
-        <div className="flex justify-between">
-          <p className="font-extralight">Flash loan fee:</p>
-          <p>{Number(flashLoanFee?.toString()) / 100}%</p>
+          <p className="font-extralight">Max. liquidatable amt:</p>{" "}
+          {liquidatable ? (
+            <p>
+              {liquidateAsset && maxLiquidationAmount[liquidateAsset]}{" "}
+              {chainId &&
+                liquidateAsset &&
+                contractAddresses[chainId][liquidateAsset]}
+            </p>
+          ) : (
+            "NA"
+          )}
         </div>
 
         {chainId && liquidateAsset && (
           <div className="flex justify-between">
-            <p className="font-extralight">
-              Estimated {contractAddresses[chainId][liquidateAsset]} required:{" "}
-            </p>
-            <p>
-              {(Number(flashLoanFee?.toString()) / 10000) *
-                maxLiquidationAmount[liquidateAsset]}
-            </p>
+            <p className="font-extralight">Flash loan fee:</p>
+            {liquidatable ? (
+              <p>
+                {maxLiquidationAmount[liquidateAsset] *
+                  (Number(flashLoanFee?.toString()) / 10000)}{" "}
+                {contractAddresses[chainId][liquidateAsset]}
+              </p>
+            ) : (
+              "NA"
+            )}
           </div>
         )}
 
-        <div className="flex justify-between">
-          <p className="font-extralight">
-            {chainId &&
-              liquidateAsset &&
-              contractAddresses[chainId][liquidateAsset]}{" "}
-            balance in contract:{" "}
-          </p>
-          <p>{tokenFeeBalance && ethers.utils.formatEther(tokenFeeBalance)}</p>
-        </div>
-
-        <div className="flex space-x-4 text-xs text-blue-500 font-extralight">
-          <div className="cursor-pointer hover:underline">
-            Deposit{" "}
-            {chainId &&
-              liquidateAsset &&
-              contractAddresses[chainId][liquidateAsset]}
+        {chainId && liquidateAsset && collateralAsset && (
+          <div className="flex justify-between">
+            <p className="font-extralight">
+              Est. collateral ({contractAddresses[chainId][collateralAsset]}) to
+              liquidate:{" "}
+            </p>
+            {liquidatable ? (
+              <p>
+                {prices &&
+                  (Number(ethers.utils.formatUnits(prices[1], 8)) *
+                    maxLiquidationAmount[liquidateAsset] *
+                    liquidationBonus) /
+                    Number(ethers.utils.formatUnits(prices[0], 8))}
+              </p>
+            ) : (
+              "NA"
+            )}
           </div>
-          <div
-            onClick={() => writeWithdraw?.()}
-            className="cursor-pointer hover:underline"
-          >
-            Withdraw{" "}
-            {chainId &&
-              liquidateAsset &&
-              contractAddresses[chainId][liquidateAsset]}
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

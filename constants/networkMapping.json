@@ -1,3 +1,9 @@
 {
-  "43113": { "LiquidatooorV3": ["0xc5a0041d70FE742a9730f326f5523978e108b7b2"] }
+  "43113": {
+    "LiquidatooorV3": [
+      "0xc5a0041d70FE742a9730f326f5523978e108b7b2",
+      "0x2A7F028d3558f3D41bd8F19BDfaF4b28D2847265"
+    ]
+  },
+  "80001": { "LiquidatooorV3": ["0x076819561fA04acE27E676845c68c3b1A9Dcd18F"] }
 }

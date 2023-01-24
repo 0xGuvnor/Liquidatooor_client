@@ -7,14 +7,14 @@ import {
   RainbowKitProvider,
 } from "@rainbow-me/rainbowkit";
 import { WagmiConfig, configureChains, createClient } from "wagmi";
-import { avalanche, avalancheFuji, polygon, polygonMumbai } from "wagmi/chains";
+import { avalancheFuji, polygonMumbai } from "wagmi/chains";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
 import { ThemeProvider } from "next-themes";
 import { UserProvider } from "../context/userContext";
 
 const { chains, provider } = configureChains(
-  [avalanche, avalancheFuji, polygon, polygonMumbai],
+  [avalancheFuji, polygonMumbai],
   [
     alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API! }),
     publicProvider(),

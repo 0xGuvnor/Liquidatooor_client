@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import { useEffect, useState } from "react";
-import { useContractRead } from "wagmi";
+import { erc20ABI, useContractRead } from "wagmi";
 import { protocolDataProvider } from "../../constants/aave/v3/protocolDataProvider";
 import { contractAddresses } from "../../constants/contractAddresses";
 import { useUserContext } from "../../context/userContext";
@@ -38,8 +38,14 @@ const AssetStat = ({ asset, isCollateral }: StatProps) => {
   const truncateAddress = (address: `0x${string}`) =>
     `${address.slice(0, 6)}...${address.slice(-4)}`;
 
+  const { data: decimals } = useContractRead({
+    address: asset,
+    abi: erc20ABI,
+    functionName: "decimals",
+  });
+
   const { data: assetData, isLoading } = useContractRead({
-    address: "0x8e0988b28f9CdDe0134A206dfF94111578498C63",
+    address: contractAddresses[chainId || 43114].ProtocolDataProvider,
     abi: protocolDataProvider,
     functionName: "getUserReserveData",
     args: [asset, account as `0x${string}`],
@@ -48,12 +54,16 @@ const AssetStat = ({ asset, isCollateral }: StatProps) => {
   useEffect(() => {
     if (assetData) {
       setTotalDebt(
-        Number(ethers.utils.formatEther(assetData.currentStableDebt)) +
-          Number(ethers.utils.formatEther(assetData.currentVariableDebt))
+        Number(
+          ethers.utils.formatUnits(assetData.currentStableDebt, decimals)
+        ) +
+          Number(
+            ethers.utils.formatUnits(assetData.currentVariableDebt, decimals)
+          )
       );
     }
 
-    if (!(healthFactor && healthFactor < 1 && healthFactor > 0.95)) {
+    if (healthFactor && healthFactor < 1 && healthFactor > 0.95) {
       // Default liquidation close factor
       setMaxLiquidationAmount((prevState) => ({
         ...prevState,
@@ -78,7 +88,9 @@ const AssetStat = ({ asset, isCollateral }: StatProps) => {
       </div>
       <div className="stat-value">
         {isCollateral && assetData
-          ? roundNum(ethers.utils.formatEther(assetData!.currentATokenBalance))
+          ? roundNum(
+              ethers.utils.formatUnits(assetData.currentATokenBalance, decimals)
+            )
           : roundNum(totalDebt.toString())}
       </div>
       <div
